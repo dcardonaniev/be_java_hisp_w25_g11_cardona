@@ -1,10 +1,11 @@
 package com.example.be_java_hisp_w25_g11.service.seller_post;
 
 import com.example.be_java_hisp_w25_g11.dto.SellerPostDTO;
-import com.example.be_java_hisp_w25_g11.dto.commons.enums.EnumDateOrganizer;
+import com.example.be_java_hisp_w25_g11.dto.SellerPromoPostDTO;
 import com.example.be_java_hisp_w25_g11.dto.request.CreatePostRequestDTO;
-import com.example.be_java_hisp_w25_g11.dto.request.OrganizerByDateDTO;
+import com.example.be_java_hisp_w25_g11.dto.request.CreatePromoPostRequestDTO;
 import com.example.be_java_hisp_w25_g11.dto.response.SellerPostsListDTO;
+import com.example.be_java_hisp_w25_g11.dto.response.SellerPromoPostCountDTO;
 import com.example.be_java_hisp_w25_g11.entity.Buyer;
 import com.example.be_java_hisp_w25_g11.entity.Product;
 import com.example.be_java_hisp_w25_g11.entity.Seller;
@@ -63,6 +64,31 @@ public class SellerPostServiceImp implements ISellerPostService {
     }
 
     @Override
+    public SellerPromoPostDTO createPromoPost(CreatePromoPostRequestDTO request) {
+        Optional<Seller> seller = sellerRepository.get(request.getUserId());
+        if (seller.isEmpty())
+            throw new NotFoundException("No existe un vendedor con ese ID");
+
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH);
+        SellerPost sellerPost = new SellerPost(
+                request.getUserId(),
+                null,
+                LocalDate.parse(request.getDate(), dateTimeFormatter),
+                modelMapper.map(request.getProduct(), Product.class),
+                request.getCategory(),
+                request.getPrice(),
+                seller.get(),
+                request.isHasPromo(),
+                request.getDiscount()
+        );
+
+        sellerPost = sellerPostRepository.create(sellerPost);
+        seller.get().getPosts().add(sellerPost);
+
+        return modelMapper.map(sellerPost, SellerPromoPostDTO.class);
+    }
+
+    @Override
     public SellerPostsListDTO getFollowedSellersLatestPosts(Integer userId, String order) {
         List<SellerPost> posts;
 
@@ -97,6 +123,24 @@ public class SellerPostServiceImp implements ISellerPostService {
         );
     }
 
+    @Override
+    public SellerPromoPostCountDTO getSellerPromoPostCount(Integer userId) {
+        Optional<Seller> seller = sellerRepository.get(userId);
+        if (seller.isEmpty())
+            throw new NotFoundException("No existe un vendedor con ese ID");
+
+        long count = seller.get().getPosts()
+                .stream()
+                .filter(SellerPost::getHasPromo)
+                .count();
+
+        return new SellerPromoPostCountDTO(
+                seller.get().getId(),
+                seller.get().getName(),
+                (int) count
+        );
+    }
+
     private List<SellerPost> getMergedPostsList(Set<Integer> followed) {
         List<SellerPost> posts;
         posts = followed
@@ -117,9 +161,5 @@ public class SellerPostServiceImp implements ISellerPostService {
                 .toList();
 
         return posts;
-    }
-
-    private boolean compareDate(LocalDate a, LocalDate b) {
-        return a.isAfter(b);
     }
 }
