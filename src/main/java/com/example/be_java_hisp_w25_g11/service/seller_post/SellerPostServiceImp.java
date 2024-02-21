@@ -6,6 +6,7 @@ import com.example.be_java_hisp_w25_g11.dto.request.CreatePostRequestDTO;
 import com.example.be_java_hisp_w25_g11.dto.request.CreatePromoPostRequestDTO;
 import com.example.be_java_hisp_w25_g11.dto.response.SellerPostsListDTO;
 import com.example.be_java_hisp_w25_g11.dto.response.SellerPromoPostCountDTO;
+import com.example.be_java_hisp_w25_g11.dto.response.SellerPromoPostsListDTO;
 import com.example.be_java_hisp_w25_g11.entity.Buyer;
 import com.example.be_java_hisp_w25_g11.entity.Product;
 import com.example.be_java_hisp_w25_g11.entity.Seller;
@@ -138,6 +139,25 @@ public class SellerPostServiceImp implements ISellerPostService {
                 seller.get().getId(),
                 seller.get().getName(),
                 (int) count
+        );
+    }
+
+    @Override
+    public SellerPromoPostsListDTO getSellerPromoPostList(Integer userId) {
+        Optional<Seller> seller = sellerRepository.get(userId);
+        if (seller.isEmpty())
+            throw new NotFoundException("No existe un vendedor con ese ID");
+
+        List<SellerPromoPostDTO> posts = seller.get().getPosts()
+                .stream()
+                .filter(SellerPost::getHasPromo)
+                .map(p -> modelMapper.map(p, SellerPromoPostDTO.class))
+                .toList();
+
+        return new SellerPromoPostsListDTO(
+                seller.get().getId(),
+                seller.get().getName(),
+                posts
         );
     }
 

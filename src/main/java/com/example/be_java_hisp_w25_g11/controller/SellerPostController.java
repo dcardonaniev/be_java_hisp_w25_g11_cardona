@@ -46,4 +46,11 @@ public class SellerPostController {
     ) {
         return new ResponseEntity<>(sellerPostService.getSellerPromoPostCount(user_id), HttpStatus.OK);
     }
+
+    @GetMapping("/promo-post/list")
+    public ResponseEntity<?> getSellerPromoPostList(
+            @RequestParam Integer user_id
+    ) {
+        return new ResponseEntity<>(sellerPostService.getSellerPromoPostList(user_id), HttpStatus.OK);
+    }
 }
